@@ -39,7 +39,7 @@ employee can verify the answer.
   the sidebar.
 - **Professional UI** — responsive two-pane layout, Markdown answers, loading
   and error states, copy and clear actions, and a session-scoped transcript.
-- **Tested core** — 47 backend tests cover loaders, chunking, retrieval,
+- **Tested core** — 49 backend tests cover loaders, chunking, retrieval,
   ingestion replacement safety, API contracts, and conversation memory.
 
 ## Technology stack
@@ -139,7 +139,8 @@ AskPolicy/
 ├── documents/                 # Put policy files here (ignored by git)
 ├── docs/
 │   ├── ARCHITECTURE.md
-│   └── INTERVIEW_GUIDE.md
+│   ├── HOW_IT_WORKS.md
+│   └── RUNNING_AND_DATA.md
 ├── backend/
 │   ├── pyproject.toml
 │   ├── uv.lock
@@ -353,5 +354,5 @@ Qdrant API surface.
 Additional technical and operational details are available in:
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system design, ingestion/retrieval flow, and key implementation decisions
-- [`docs/INTERVIEW_GUIDE.md`](docs/INTERVIEW_GUIDE.md) — component-by-component explanation of the RAG pipeline
+- [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) — end-to-end explanation of how the application works
 - [`docs/RUNNING_AND_DATA.md`](docs/RUNNING_AND_DATA.md) — runbook for setup, ingestion, and data management in Qdrant
