@@ -348,56 +348,10 @@ Tests do not require live credentials: external services are replaced with
 fakes, and ingestion tests use an in-memory Qdrant client through the real
 Qdrant API surface.
 
-## Screenshots
+## Documentation
 
-Screenshots are intentionally not committed yet: the repository ships with an
-empty `documents/` folder, and the UI is most representative after ingesting
-real policies. Add images under `docs/screenshots/` and reference them here.
+Additional technical and operational details are available in:
 
-| View | Suggested file |
-| --- | --- |
-| Welcome screen and suggested questions | `docs/screenshots/welcome.png` |
-| Grounded answer with source cards | `docs/screenshots/answer-sources.png` |
-| Document filter in the sidebar | `docs/screenshots/document-filter.png` |
-| Mobile layout | `docs/screenshots/mobile.png` |
-
-## Limitations
-
-- **Follow-up retrieval is not rewritten.** Conversation history helps the LLM
-  interpret follow-ups, but the Qdrant query uses the current question text
-  verbatim. A follow-up such as "and how many of those are paid?" may retrieve
-  weaker evidence than a self-contained question.
-- **Memory is process-local.** LangGraph state lives in an in-memory
-  checkpointer. Restarting the backend clears all threads, and the design
-  assumes a single Uvicorn worker. The frontend seeds a restarted thread from
-  `sessionStorage`, but two backend workers would each hold separate memory.
-- **Ingestion is all-or-nothing for the whole folder.** There is one knowledge
-  base and no incremental updates: every run re-embeds every supported file.
-- **Character-based chunking.** A 1000-character chunk usually fits
-  MiniLM's 256-token limit, but unusually dense text can be silently truncated
-  by the embedding model. Chunk sizing is not token-aware.
-- **Text extraction only.** Scanned PDFs without a text layer and encrypted
-  PDFs that require a non-empty password are not supported. PDF tables are
-  extracted as page text, not reconstructed as structured tables.
-- **No OCR, authentication, or per-user access control.** The app is intended
-  for local development and a trusted single-user environment.
-- **No hybrid search or reranking.** Version 1 uses dense cosine retrieval only;
-  BM25, reciprocal rank fusion, MMR, and cross-encoder reranking are out of
-  scope.
-- **Answers depend on the indexed corpus.** If a policy is not in `documents/`,
-  AskPolicy will say it cannot find the information rather than fall back to
-  general knowledge.
-- **Session persistence is browser-tab scoped.** Chat messages and the thread id
-  are stored in `sessionStorage`, not in a database.
-
-## Future improvements
-
-- Rewrite follow-up questions into standalone retrieval queries using history.
-- Hybrid dense + BM25 retrieval with reciprocal rank fusion.
-- Cross-encoder reranking and MMR for more diverse context.
-- Token-aware chunking and parent-child retrieval for long policy sections.
-- Better PDF table extraction and OCR for scanned documents.
-- Evaluation pipeline (for example RAGAS) with a labelled policy question set.
-- Authentication and role-based document access.
-- Multiple knowledge bases and incremental indexing.
-- Deployment with a shared conversation store if multi-user support is needed.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system design, ingestion/retrieval flow, and key implementation decisions
+- [`docs/INTERVIEW_GUIDE.md`](docs/INTERVIEW_GUIDE.md) — component-by-component explanation of the RAG pipeline
+- [`docs/RUNNING_AND_DATA.md`](docs/RUNNING_AND_DATA.md) — runbook for setup, ingestion, and data management in Qdrant
