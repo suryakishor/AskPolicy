@@ -1,0 +1,246 @@
+@import 'tailwindcss';
+
+/*
+ * AskPolicy design tokens.
+ * Warm neutral canvas + a single deep green accent; no gradients, no alternate
+ * theme colors, so the interface stays restrained and professional.
+ */
+@theme {
+  --font-sans:
+    'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --font-serif:
+    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia,
+    serif;
+
+  --color-canvas: #faf9f6;
+  --color-surface: #ffffff;
+  --color-line: #e6e2d9;
+  --color-ink: #222826;
+  --color-ink-soft: #6b746f;
+  --color-accent: #1c5b4f;
+  --color-accent-soft: #eef4f1;
+  --color-accent-line: #cfe0d9;
+  --color-danger: #a1483e;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  textarea,
+  input {
+    font: inherit;
+  }
+
+  ::selection {
+    background: #d8e7e1;
+    color: #14211d;
+  }
+
+  /* Subtle, consistent scrollbars in the sidebar and conversation. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d8d3c8 transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #d8d3c8;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* ------------------------------------------------------------------------- */
+/* Markdown answer rendering                                                 */
+/* ------------------------------------------------------------------------- */
+.markdown {
+  overflow-wrap: anywhere;
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: var(--color-ink);
+}
+
+.markdown > * + * {
+  margin-top: 0.8rem;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  color: var(--color-ink);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.markdown h1 {
+  font-size: 1.25rem;
+}
+
+.markdown h2 {
+  font-size: 1.1rem;
+}
+
+.markdown h3,
+.markdown h4 {
+  font-size: 1rem;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.3rem;
+}
+
+.markdown ul {
+  list-style: disc;
+}
+
+.markdown ol {
+  list-style: decimal;
+}
+
+.markdown li + li {
+  margin-top: 0.3rem;
+}
+
+.markdown li > ul,
+.markdown li > ol {
+  margin-top: 0.3rem;
+}
+
+.markdown strong {
+  font-weight: 600;
+  color: #17201d;
+}
+
+.markdown em {
+  font-style: italic;
+}
+
+.markdown a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  text-underline-offset: 2px;
+}
+
+.markdown a:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+.markdown code {
+  border: 1px solid var(--color-line);
+  border-radius: 0.3rem;
+  background: #f2efe8;
+  padding: 0.1rem 0.3rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.84em;
+}
+
+.markdown pre {
+  overflow-x: auto;
+  border-radius: 0.65rem;
+  background: #202624;
+  padding: 0.85rem 1rem;
+  color: #f2f0ea;
+}
+
+.markdown pre code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: 0.82em;
+  line-height: 1.65;
+}
+
+.markdown blockquote {
+  border-left: 3px solid var(--color-accent-line);
+  padding-left: 0.9rem;
+  color: var(--color-ink-soft);
+}
+
+.markdown hr {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.markdown-table-wrap {
+  overflow-x: auto;
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88em;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid var(--color-line);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown th {
+  background: #f6f3ec;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Motion (restrained)                                                       */
+/* ------------------------------------------------------------------------- */
+@keyframes askpolicy-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-enter {
+  animation: askpolicy-fade-up 200ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-enter {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}

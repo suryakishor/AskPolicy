@@ -1,0 +1,49 @@
+[project]
+name = "askpolicy-backend"
+version = "1.0.0"
+description = "AskPolicy backend: FastAPI RAG service for company policy documents"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.163.1",
+    "langchain-core>=1.8.1",
+    "langchain-groq>=1.1.3",
+    "langchain-huggingface>=1.2.3",
+    "langchain-qdrant>=1.1.0",
+    "langchain-text-splitters>=1.1.3",
+    "langgraph>=1.2.22",
+    "pydantic-settings>=2.16.3",
+    "pypdf>=7.1.0",
+    "python-docx>=1.2.0",
+    "python-dotenv>=1.2.4",
+    "qdrant-client>=1.20.0",
+    "sentence-transformers>=6.3.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "ruff>=0.17.5",
+]
+
+# This repository contains an application, not an installable library, so uv
+# should not try to build/package the backend.
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["app", "ingestion", "tests"]
+extend-exclude = [".cache", ".venv", ".pytest_cache", ".ruff_cache", "__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
