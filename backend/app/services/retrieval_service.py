@@ -1,9 +1,7 @@
 """Dense vector retrieval from Qdrant via LangChain's Qdrant integration.
 
-Retrieval is deliberately simple in Version 1: embed the question, ask Qdrant
-for the nearest chunks by cosine similarity, optionally filter by source file.
-BM25, hybrid search, MMR and reranking are intentionally out of scope, but
-this class is the single place they would be added later.
+Retrieval embeds the question, asks Qdrant for the nearest chunks by cosine
+similarity, and optionally filters by source file.
 """
 
 from __future__ import annotations
@@ -38,12 +36,7 @@ class RetrievalService:
         self._lock = threading.Lock()
 
     def _get_store(self) -> QdrantVectorStore:
-        """Create the LangChain vector store on first use.
-
-        The store is bound to the *alias*, not to a physical collection, so a
-        re-ingestion that moves the alias is picked up automatically by the
-        next search.
-        """
+        """Create the LangChain vector store on first use, bound to the alias."""
         if self._store is None:
             with self._lock:
                 if self._store is None:
@@ -62,13 +55,7 @@ class RetrievalService:
 
     @staticmethod
     def _build_filter(source: str | None) -> qdrant_models.Filter | None:
-        """Build a metadata filter for an optional source document.
-
-        Payload metadata is stored under ``metadata.source`` (the relative path
-        inside ``documents/``). Filtering happens inside Qdrant, before the
-        top-k limit is applied, so results stay relevant rather than being
-        filtered afterwards in Python.
-        """
+        """Build a Qdrant filter on ``metadata.source`` for an optional document."""
         if not source:
             return None
         return qdrant_models.Filter(
@@ -86,18 +73,7 @@ class RetrievalService:
         source: str | None = None,
         top_k: int | None = None,
     ) -> list[RetrievedChunk]:
-        """Return the most relevant chunks for a question.
-
-        Args:
-            question: Natural-language user question.
-            source: Optional relative document path to search within.
-            top_k: Number of chunks to return; defaults to ``RETRIEVAL_TOP_K``.
-
-        Returns:
-            A list of ``RetrievedChunk`` objects ordered by descending cosine
-            similarity. An empty list means retrieval succeeded but found no
-            matching content (for example, a filter with no chunks).
-        """
+        """Return the most relevant chunks for a question, ordered by similarity."""
         cleaned = question.strip()
         if not cleaned:
             return []

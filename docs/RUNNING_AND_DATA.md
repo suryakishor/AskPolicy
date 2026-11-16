@@ -115,7 +115,7 @@ npm run build
    - Deletes the previous physical collection and orphaned temporary ingestion collections **only after** success.
 4. Verify: call `GET /api/documents` or use the sidebar refresh in the UI. New questions will retrieve from the updated alias immediately.
 
-**Important:** Each ingestion run indexes the *current* contents of `documents/` as the full knowledge base (it is not incremental append). To "add" a document, keep existing files in `documents/` and add the new one, then re-run ingestion.
+**Important:** Each ingestion run indexes the *current* contents of `documents/` as the full knowledge base. To "add" a document, keep existing files in `documents/` and add the new one, then re-run ingestion.
 
 ## 5. How to delete/replace previous data in the vector database
 
@@ -184,5 +184,5 @@ After clearing:
 - **No documents indexed:** ensure files are in `documents/` with supported extensions and contain extractable text, then re-run ingestion.
 - **PDF text missing:** scanned/image-only PDFs and some encrypted PDFs may not extract; use text-based PDFs or convert/OCR externally.
 - **Changes not reflected:** re-run ingestion and use the UI refresh; backend restart is not required for re-indexing (restart is required for code/config changes depending on setup).
-- **Conversation memory resets:** memory is in-process (`InMemorySaver`); restarting the backend or running multiple workers clears/isolates threads.
+- **Conversation memory resets:** memory is in-process (`InMemorySaver`); restarting the backend clears threads.
 - **Embedding model download slow/fails:** ensure network access on first ingestion; model files are cached in `backend/.cache/huggingface/`.

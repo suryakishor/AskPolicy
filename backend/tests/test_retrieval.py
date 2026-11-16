@@ -1,9 +1,4 @@
-"""Retrieval tests using an in-memory Qdrant instance and fake embeddings.
-
-No Qdrant Cloud credentials, embedding model download, or network access is
-required: the Qdrant client's local mode provides the same collection/filter
-API used in production.
-"""
+"""Retrieval tests using an in-memory Qdrant instance and fake embeddings."""
 
 from __future__ import annotations
 

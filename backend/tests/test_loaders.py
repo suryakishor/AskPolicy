@@ -11,12 +11,7 @@ from ingestion.loaders import discover_documents, load_document
 
 
 def build_pdf(pages: list[str]) -> bytes:
-    """Create a tiny valid PDF with extractable text, without extra dependencies.
-
-    pypdf can write pages but cannot add text, so the fixture is assembled from
-    raw PDF objects. It is intentionally minimal but fully valid (correct xref
-    offsets), which lets the test exercise the real extraction path.
-    """
+    """Create a tiny valid PDF with extractable text, without extra dependencies."""
     objects: list[bytes] = [b"<< /Type /Catalog /Pages 2 0 R >>"]
     kids = " ".join(f"{4 + index * 2} 0 R" for index in range(len(pages)))
     objects.append(f"<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>".encode())

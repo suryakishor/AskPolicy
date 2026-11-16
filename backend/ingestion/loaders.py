@@ -1,13 +1,7 @@
 """Text extraction for PDF, TXT, and DOCX documents.
 
-Each loader returns LangChain ``Document`` objects at the smallest natural unit:
-
-* PDF: one document per page, so a citation can point at a real page number.
-* DOCX: one document for the whole file (Word does not expose fixed pages).
-* TXT: one document for the whole file.
-
-The chunker later splits these into overlapping chunks while preserving this
-metadata.
+PDF files yield one document per page so citations can point at real pages;
+DOCX and TXT yield one document for the whole file.
 """
 
 from __future__ import annotations
@@ -28,8 +22,7 @@ from ingestion.metadata import SUPPORTED_EXTENSIONS, base_metadata
 
 logger = get_logger(__name__)
 
-# Text encodings tried in order for .txt files. UTF-8 covers most documents;
-# cp1252/latin-1 are common fallbacks for older Windows files.
+# Text encodings tried in order for .txt files.
 TEXT_ENCODINGS = ("utf-8-sig", "utf-8", "cp1252", "latin-1")
 
 
@@ -60,8 +53,7 @@ def load_document(path: Path, documents_root: Path) -> LoadResult:
     """Extract text from a supported file based on its extension.
 
     Raises:
-        IngestionError: The file is unreadable or its format is unsupported.
-            Ingestion aborts rather than silently producing a partial index.
+        IngestionError: The file is unreadable or unsupported.
     """
     suffix = path.suffix.lower()
     if suffix == ".pdf":
@@ -156,8 +148,8 @@ def _load_docx(path: Path, documents_root: Path) -> LoadResult:
             if text:
                 blocks.append(text)
         else:
-            # Include table content because policies often put pay scales,
-            # allowances, or leave tables inside Word tables.
+            # Include table content; policies often store pay scales and leave
+            # tables inside Word tables.
             for row in block.rows:
                 cells = [cell.text.strip() for cell in row.cells]
                 if any(cells):
@@ -189,12 +181,7 @@ def _iter_docx_blocks(docx):
 
 
 def _clean_text(text: str) -> str:
-    """Normalize whitespace without destroying paragraph boundaries.
-
-    Runs of spaces are collapsed and trailing spaces are removed, but blank
-    lines are preserved because they are the highest-priority separator for
-    recursive chunking.
-    """
+    """Collapse runs of spaces while preserving blank-line boundaries."""
     lines = [line.rstrip() for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
     normalized = "\n".join(lines)
     # Collapse three or more blank lines, which PDF extraction often creates.

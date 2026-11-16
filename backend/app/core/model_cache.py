@@ -1,12 +1,7 @@
 """Point Hugging Face and Sentence Transformers at the project cache.
 
-This module must be imported *before* ``sentence_transformers``,
-``transformers``, or ``langchain_huggingface``. Those libraries read their
-cache environment variables at import time, so setting them afterwards would
-send model weights to the user's global cache directory.
-
-The entire ``backend/.cache`` directory is gitignored and is also the only
-place the embedding model is allowed to live.
+Imported before the model libraries so their cache environment variables are set
+before they read them. Weights live only in ``backend/.cache``.
 """
 
 from __future__ import annotations
@@ -26,8 +21,8 @@ def configure_model_cache() -> None:
     (cache_root / "hub").mkdir(parents=True, exist_ok=True)
     (cache_root / "sentence_transformers").mkdir(parents=True, exist_ok=True)
 
-    # ``setdefault`` preserves an explicit override from the developer's shell
-    # while keeping the project-managed cache as the default.
+    # ``setdefault`` keeps an explicit shell override while defaulting to the
+    # project-managed cache.
     os.environ.setdefault("HF_HOME", str(cache_root))
     os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(cache_root / "hub"))
     os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", str(cache_root / "sentence_transformers"))

@@ -1,12 +1,7 @@
 """Local embedding generation with ``all-MiniLM-L6-v2``.
 
-The same embedding model is used for document chunks during ingestion and for
-user questions during retrieval. Both vectors must live in the same semantic
-space for cosine similarity to be meaningful.
-
-The model runs on CPU by default and is loaded lazily: starting the API should
-not require downloading or loading a model, and tests that never touch
-embeddings should stay fast.
+The same model embeds document chunks during ingestion and questions during
+retrieval, so both share one semantic space. It runs on CPU and loads lazily.
 """
 
 from __future__ import annotations
@@ -14,8 +9,7 @@ from __future__ import annotations
 import threading
 from typing import TYPE_CHECKING
 
-# Importing this module configures HF_HOME / SENTENCE_TRANSFORMERS_HOME before
-# sentence-transformers reads them. Keep this import at the top.
+# Configures the HF cache before sentence-transformers reads it.
 from app.core import model_cache  # noqa: F401  (imported for its side effect)
 from app.core.config import BACKEND_DIR, settings
 from app.core.errors import ConfigurationError
@@ -26,22 +20,12 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-#: Sentence Transformers' ``encode`` accepts a batch size; 32 keeps memory
-#: usage modest on CPU while still giving decent throughput.
+#: Batch size for encoding; 32 keeps CPU memory modest.
 EMBEDDING_BATCH_SIZE = 32
 
 
 class EmbeddingService:
-    """Thin, thread-safe wrapper around LangChain's ``HuggingFaceEmbeddings``.
-
-    Notes:
-        ``all-MiniLM-L6-v2`` produces 384-dimensional vectors and has a maximum
-        input length of 256 word pieces. The ingestion chunker works in
-        characters (1000 by default); for normal English prose that is well
-        below the model limit, but the model will silently truncate unusually
-        dense text. See ``docs/ARCHITECTURE.md`` for the character-vs-token
-        explanation.
-    """
+    """Thread-safe wrapper around LangChain's ``HuggingFaceEmbeddings``."""
 
     def __init__(
         self,
@@ -62,12 +46,7 @@ class EmbeddingService:
         return str(cache_root / "sentence_transformers")
 
     def get_embeddings(self) -> HuggingFaceEmbeddings:
-        """Return the initialized embedding client, loading it on first use.
-
-        ``HuggingFaceEmbeddings`` is imported lazily so that importing the
-        FastAPI app does not pull in PyTorch/Sentence Transformers. The model
-        cache configuration at the top of this module still runs first.
-        """
+        """Return the embedding client, loading it on first use."""
         if self._embeddings is None:
             with self._lock:
                 if self._embeddings is None:
@@ -105,11 +84,7 @@ class EmbeddingService:
         return self.get_embeddings().embed_query(cleaned)
 
     def verify_dimension(self, expected: int) -> int:
-        """Run a tiny embedding and assert the model's vector size.
-
-        Catching a dimension mismatch during ingestion is much cheaper than
-        discovering it after creating a collection with the wrong size.
-        """
+        """Embed a probe string and assert the model's vector size."""
         vector = self.embed_query("dimension check")
         actual = len(vector)
         if actual != expected:

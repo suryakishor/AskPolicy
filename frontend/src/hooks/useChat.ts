@@ -1,11 +1,6 @@
 /**
- * Chat state for the current browser session.
- *
- * Responsibilities:
- * - keep messages in React state (and sessionStorage for a refresh-safe session);
- * - call POST /api/chat with the active thread id and optional document filter;
- * - surface loading and error states;
- * - clear both UI state and the backend's in-memory conversation.
+ * Chat state for the current browser session: messages, thread id, loading,
+ * errors, and server-side conversation reset.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -13,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ApiError, api } from '../services/api'
 import type { ChatMessage, UiMessage } from '../types'
 
-const STORAGE_KEY = 'askpolicy.session.v1'
+const STORAGE_KEY = 'askpolicy.session'
 
 interface PersistedSession {
   messages: UiMessage[]
@@ -99,9 +94,7 @@ export function useChat() {
         sources: [],
       }
 
-      // Snapshot the prior turns before appending the new question. The backend
-      // ignores this when its LangGraph thread already has state, but it lets a
-      // restored browser session seed memory after a backend restart.
+      // Seed a fresh thread after a backend restart; ignored once state exists.
       const history: ChatMessage[] = messages.slice(-10).map((message) => ({
         role: message.role,
         content: message.content,
@@ -140,8 +133,7 @@ export function useChat() {
     setThreadId(null)
     setError(null)
 
-    // Best-effort server cleanup. A new thread id is generated on the next
-    // question, so a failed reset only leaves unused memory in the process.
+    // Best-effort server cleanup; a new thread id is generated on next send.
     if (previousThread) {
       try {
         await api.resetThread(previousThread)

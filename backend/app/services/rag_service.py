@@ -1,18 +1,7 @@
-"""RAG orchestration with lightweight conversation memory.
+"""RAG orchestration with short-term conversation memory.
 
-The pipeline is intentionally linear and easy to explain:
-
-1. LangGraph receives the new question and loads the thread's recent messages
-   from an in-memory checkpointer.
-2. The ``answer`` node retrieves relevant chunks from Qdrant.
-3. Prompt templates combine the retrieved evidence, a small amount of
-   conversation context, and the question.
-4. Groq generates a grounded answer.
-5. The answer is appended to the thread; anything older than the last five
-   question/answer exchanges is removed.
-
-There are no agents, tools, or branches. LangGraph is used only because it
-provides ``MessagesState`` plus checkpointed thread memory.
+It retrieves chunks from Qdrant, builds a grounded prompt, calls Groq, and stores
+each exchange in a per-thread LangGraph memory.
 """
 
 from __future__ import annotations
@@ -63,13 +52,7 @@ class ChatResult:
 
 
 class ChatState(MessagesState):
-    """Graph state: conversation messages plus the latest turn's sources.
-
-    ``MessagesState`` already defines ``messages`` with the ``add_messages``
-    reducer, which supports appending and removing messages. ``sources`` is a
-    simple last-value field used only to return evidence to the API layer; it is
-    not sent back to the model.
-    """
+    """Conversation messages plus the latest turn's sources."""
 
     sources: list[dict]
 
@@ -89,12 +72,7 @@ class RagService:
 
     # ------------------------------------------------------------------ graph
     def _build_graph(self):
-        """Compile the one-node memory graph.
-
-        ``InMemorySaver`` keeps state in process memory only. It disappears when
-        the backend restarts, which is acceptable for Version 1 (no database or
-        persistent chat storage).
-        """
+        """Compile the one-node memory graph backed by an in-memory checkpointer."""
         builder = StateGraph(ChatState)
         builder.add_node("answer", self._answer_node)
         builder.add_edge(START, "answer")
@@ -177,10 +155,8 @@ class RagService:
     ) -> list[SourceReference]:
         """Return only the excerpts the answer actually cited.
 
-        The prompt asks for citations such as ``[1]`` and ``[2]``. Showing every
-        retrieved chunk would imply that irrelevant context supported the answer.
-        If the model omits citations entirely, all retrieved chunks are returned
-        as a fallback so the user still has evidence to inspect.
+        If the model cites nothing, all retrieved chunks are returned so the
+        user still has evidence to inspect.
         """
         cited: list[int] = []
         for match in CITATION_PATTERN.finditer(answer):
@@ -204,15 +180,8 @@ class RagService:
     ) -> ChatResult:
         """Run one question through the RAG pipeline.
 
-        Args:
-            question: Validated, non-empty user question.
-            thread_id: Existing conversation id, or ``None`` to start a new one.
-            source: Optional relative document path for metadata filtering.
-            history: Optional client history used to seed a brand-new thread.
-                Server-side memory is authoritative after the first turn.
-
-        Returns:
-            Answer, source references, and the thread id for the client to reuse.
+        ``history`` only seeds a brand-new thread; server-side memory is
+        authoritative afterwards.
         """
         resolved_thread_id = (thread_id or "").strip() or uuid4().hex
         config: RunnableConfig = {
@@ -262,12 +231,7 @@ class RagService:
         config: RunnableConfig,
         history: list[ChatMessage],
     ) -> None:
-        """Seed a brand-new thread from optional client-supplied history.
-
-        This keeps the documented ``history`` request field meaningful without
-        duplicating messages on later requests: seeding only happens when the
-        thread has no stored messages yet.
-        """
+        """Seed a brand-new thread from optional client history, once."""
         if not history:
             return
 

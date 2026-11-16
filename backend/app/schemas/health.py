@@ -20,7 +20,6 @@ class HealthResponse(BaseModel):
 
     status: Literal["ok", "degraded"]
     app_env: str
-    version: str
     embedding_model: str
     llm_model: str
     qdrant: dict

@@ -25,16 +25,15 @@ employee can verify the answer.
   to answer only from them.
 - **Source citations** — document name, page number (for PDFs), chunk index, and
   the supporting excerpt are returned with every answer.
-- **Local embeddings** — `sentence-transformers/all-MiniLM-L6-v2` runs on CPU;
-  no external embedding API is used.
+- **Local embeddings** — `sentence-transformers/all-MiniLM-L6-v2` runs on CPU for
+  both indexing and query embedding.
 - **Qdrant Cloud vector search** — 384-dimensional cosine similarity search with
   server-side metadata filtering by source document.
 - **Safe re-indexing** — each ingestion run builds a temporary collection,
   validates it, then atomically moves the `askpolicy_documents` alias. A failed
   run leaves the previous searchable index untouched.
 - **Conversation memory** — LangGraph `MessagesState` plus an in-memory
-  checkpointer keeps the last five question/answer exchanges per thread. No
-  database and no persistent chat storage.
+  checkpointer keeps the last five question/answer exchanges per thread.
 - **Document-scoped questions** — filter retrieval to a single indexed file from
   the sidebar.
 - **Professional UI** — responsive two-pane layout, Markdown answers, loading
@@ -49,14 +48,14 @@ employee can verify the answer.
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS 4, Lucide React |
 | Markdown | react-markdown, remark-gfm |
 | Backend | Python 3.14, FastAPI, Uvicorn, Pydantic / Pydantic Settings |
-| RAG | LangChain, LangGraph (conversation memory only) |
+| RAG | LangChain, LangGraph (conversation memory) |
 | Embeddings | Sentence Transformers, `all-MiniLM-L6-v2`, CPU |
 | Vector database | Qdrant Cloud, official Python client, LangChain Qdrant |
 | LLM | Groq API, configurable chat model |
 | Documents | PyPDF, python-docx, RecursiveCharacterTextSplitter |
 | Tooling | uv, npm, Pytest, Ruff, oxlint |
 
-Exact resolved dependency versions are recorded in `backend/uv.lock` and
+Exact resolved dependencies are recorded in `backend/uv.lock` and
 `frontend/package-lock.json`.
 
 ## Architecture
@@ -268,7 +267,7 @@ Open `http://localhost:5173`. To use another API URL, set
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/health` | API version, embedding/LLM model names, Qdrant connectivity, collection readiness |
+| `GET` | `/api/health` | Embedding/LLM model names, Qdrant connectivity, collection readiness |
 | `GET` | `/api/documents` | Indexed files with file type and chunk count, aggregated from Qdrant payloads |
 | `POST` | `/api/chat` | Grounded answer with source references and a conversation thread id |
 | `POST` | `/api/chat/reset` | Clear the in-memory LangGraph state for a thread |

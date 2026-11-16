@@ -1,12 +1,7 @@
 """Qdrant Cloud access layer.
 
-The API talks to Qdrant through a *collection alias* (``askpolicy_documents``
-by default). Ingestion builds a brand-new physical collection and atomically
-moves the alias to it, so the backend never needs a restart after re-indexing:
-every request simply resolves the alias again.
-
-This module owns connection handling and reads that are not part of the RAG
-search path (health checks and the indexed-document list).
+The API reads through the collection *alias*; ingestion builds a new physical
+collection and moves the alias, so no backend restart is needed after re-index.
 """
 
 from __future__ import annotations
@@ -26,7 +21,7 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-#: Number of points fetched per scroll page when aggregating document counts.
+#: Points fetched per scroll page when aggregating document counts.
 SCROLL_PAGE_SIZE = 512
 
 
@@ -50,13 +45,7 @@ class IndexSummary:
 
 
 class QdrantService:
-    """Lazy Qdrant client wrapper shared by the API routes.
-
-    A ``QdrantClient`` is safe to reuse across requests, but constructing it at
-    import time would make the app fail to start when credentials are missing
-    or the network is down. The client is therefore created on first use and
-    guarded by a lock.
-    """
+    """Lazy, lock-guarded Qdrant client wrapper shared by the API routes."""
 
     def __init__(self, client: QdrantClient | None = None) -> None:
         self._client = client
@@ -90,12 +79,7 @@ class QdrantService:
             raise QdrantConnectionError() from exc
 
     def get_index_summary(self) -> IndexSummary:
-        """Read actual document metadata from Qdrant to build ``GET /api/documents``.
-
-        There is no Postgres or other metadata store in Version 1, so the vector
-        payload is the single source of truth. We scroll through the collection
-        (payload only, no vectors) and aggregate chunk counts per source file.
-        """
+        """Read document metadata from Qdrant payloads to build ``GET /api/documents``."""
         if not self.collection_exists():
             raise CollectionNotReadyError()
 

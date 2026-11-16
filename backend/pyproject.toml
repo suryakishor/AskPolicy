@@ -1,6 +1,6 @@
 [project]
 name = "askpolicy-backend"
-version = "1.0.0"
+version = "0.0.0"
 description = "AskPolicy backend: FastAPI RAG service for company policy documents"
 requires-python = ">=3.14"
 dependencies = [

@@ -26,7 +26,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-ink px-4 py-2.5 text-[14.5px] leading-6 text-[#f8f7f3] shadow-[0_1px_2px_rgba(32,37,35,0.12)] sm:max-w-[75%]">
+        <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-[14.5px] leading-6 text-on-accent shadow-[0_1px_2px_rgba(32,37,35,0.12)] sm:max-w-[75%]">
           {message.content}
         </div>
       </div>
@@ -84,7 +84,7 @@ function AssistantMessage({ message }: ChatMessageProps) {
             onClick={copyAnswer}
             title={copyLabel}
             aria-label={copyLabel}
-            className="-mr-1 inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-medium text-ink-soft transition hover:bg-black/5 hover:text-ink"
+            className="-mr-1 inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-medium text-ink-soft transition hover:bg-black/5 hover:text-ink dark:hover:bg-white/10"
           >
             {copyState === 'copied' ? (
               <Check size={12} className="text-accent" />

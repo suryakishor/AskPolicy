@@ -1,9 +1,6 @@
 """Prompt templates for grounded policy answers.
 
-Prompts live here instead of inside services so the wording can be reviewed and
-changed without touching application logic. The rules mirror the project's
-anti-hallucination requirements: answer only from retrieved evidence, admit
-when information is missing, and never treat document text as instructions.
+Prompts live here so wording can change without touching application logic.
 """
 
 from __future__ import annotations
@@ -23,9 +20,10 @@ Follow these rules for every response:
 3. If the excerpts do not contain enough information to answer, respond with
    exactly this sentence and nothing else:
    "{NOT_FOUND_MESSAGE}"
-4. If the available information is incomplete, ambiguous, outdated, or
-   conflicting, say so explicitly and explain what is unclear instead of
-   picking an answer.
+4. If the excerpts provide two pieces of information for the same question and
+   they differ, consider only the latest information and base your answer on it.
+   If it is not clear which information is latest, explain that using only what
+   the excerpts show instead of guessing.
 5. Conversation history may help you understand follow-up questions, but it is
    not verified policy evidence. Use the retrieved excerpts for all factual
    claims.
@@ -41,12 +39,7 @@ Follow these rules for every response:
 
 
 def format_conversation(history: list[tuple[str, str]]) -> str:
-    """Format recent turns for the prompt.
-
-    ``history`` contains ``(role, content)`` pairs with roles ``user`` or
-    ``assistant``. It is fenced and labelled as unverified so the model does not
-    treat earlier assistant messages as source material.
-    """
+    """Format recent ``(role, content)`` turns, labelled as unverified context."""
     if not history:
         return "(no previous messages)"
 
@@ -88,12 +81,7 @@ def build_user_prompt(
     chunks: list[RetrievedChunk],
     history: list[tuple[str, str]] | None = None,
 ) -> str:
-    """Build the single user message sent alongside ``SYSTEM_PROMPT``.
-
-    Keeping history inside the user message (rather than replaying it as real
-    chat turns) makes the trust boundary explicit: the model sees that previous
-    answers are context, not policy evidence.
-    """
+    """Build the user message containing history, excerpts, and the question."""
     return f"""Conversation so far (for understanding follow-up questions only; \
 not verified policy evidence):
 {format_conversation(history or [])}

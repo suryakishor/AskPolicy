@@ -6,12 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class RetrievedChunk(BaseModel):
-    """One chunk returned by similarity search.
-
-    ``content`` is the exact text stored in the Qdrant payload. The API never
-    invents citations: every source shown in the UI comes from one of these
-    objects.
-    """
+    """One chunk returned by similarity search, with its stored text."""
 
     file_name: str
     source: str = ""

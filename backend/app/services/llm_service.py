@@ -1,9 +1,4 @@
-"""Groq chat-completion integration.
-
-Only answer generation lives here. Retrieval, prompt construction, and
-conversation memory are separate concerns, which keeps this class easy to mock
-in tests and easy to replace later.
-"""
+"""Groq chat-completion integration for answer generation."""
 
 from __future__ import annotations
 
@@ -20,11 +15,7 @@ logger = get_logger(__name__)
 
 
 class LLMService:
-    """Lazy wrapper around ``ChatGroq``.
-
-    The client is created on first use so the backend can start (and the health
-    endpoint can report status) even when the Groq key is missing.
-    """
+    """Lazy wrapper around ``ChatGroq``; the client is created on first use."""
 
     def __init__(self) -> None:
         self._llm: ChatGroq | None = None
@@ -54,19 +45,7 @@ class LLMService:
         system_prompt: str,
         user_prompt: str,
     ) -> str:
-        """Generate one grounded answer.
-
-        Args:
-            system_prompt: Rules that constrain the assistant.
-            user_prompt: Conversation context, retrieved excerpts, and question.
-
-        Returns:
-            The model's answer text.
-
-        Raises:
-            ConfigurationError: Groq credentials/model are missing.
-            LLMError: The provider call failed or returned no text.
-        """
+        """Generate one grounded answer from the system and user prompts."""
         try:
             response = self._get_llm().invoke(
                 [
@@ -77,15 +56,13 @@ class LLMService:
         except ConfigurationError:
             raise
         except Exception as exc:
-            # Log the provider error but never forward it to the browser: it may
-            # contain request details or upstream diagnostics.
+            # Log the provider error but never forward it to the browser.
             logger.exception("Groq completion failed")
             raise LLMError() from exc
 
         content = response.content
         if isinstance(content, list):
-            # Some chat models return structured content blocks. Flatten the
-            # text parts while ignoring non-text metadata.
+            # Flatten structured content blocks into plain text.
             parts = [str(block.get("text", "")) for block in content if isinstance(block, dict)]
             content = "".join(parts)
         answer = str(content or "").strip()

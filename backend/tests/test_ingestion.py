@@ -1,8 +1,4 @@
-"""End-to-end ingestion tests against an in-memory Qdrant instance.
-
-Embeddings are faked, but collection creation, uploads, validation, alias
-switching, cleanup, and payload metadata all use the real Qdrant client.
-"""
+"""End-to-end ingestion tests against an in-memory Qdrant instance."""
 
 from __future__ import annotations
 

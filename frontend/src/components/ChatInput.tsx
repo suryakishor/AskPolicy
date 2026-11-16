@@ -78,7 +78,7 @@ export function ChatInput({
               type="button"
               onClick={onDismissError}
               aria-label="Dismiss error"
-              className="-mr-1 inline-flex size-6 shrink-0 items-center justify-center rounded-md text-danger/70 transition hover:bg-danger/10 hover:text-danger"
+              className="-mr-1 inline-flex size-6 shrink-0 items-center justify-center rounded-md text-danger/70 transition hover:bg-danger/10 hover:text-danger dark:hover:bg-danger/20"
             >
               <X size={13} />
             </button>

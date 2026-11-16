@@ -1,4 +1,4 @@
-import { Filter, Menu, Trash2, X } from 'lucide-react'
+import { Filter, Menu, Moon, Sun, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { ChatInput } from './components/ChatInput'
@@ -6,17 +6,18 @@ import { ChatWindow } from './components/ChatWindow'
 import { Logo } from './components/Logo'
 import { Sidebar } from './components/Sidebar'
 import { useChat } from './hooks/useChat'
+import { useTheme } from './hooks/useTheme'
 import { useWorkspace } from './hooks/useWorkspace'
 
 export default function App() {
   const chat = useChat()
   const workspace = useWorkspace()
+  const { theme, toggleTheme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
 
-  // Derive the active filter during render. If a re-ingestion removes the
-  // selected file, the UI automatically falls back to "All documents" without
-  // an effect or a stale filter request.
+  // Derive the active filter during render so a removed file falls back to
+  // "All documents" without a stale request.
   const sourceFilter =
     selectedSource &&
     workspace.documents.some(
@@ -66,9 +67,11 @@ export default function App() {
         activeSource={sourceFilter}
         isRefreshing={workspace.isRefreshing}
         isBusy={chat.isLoading}
+        theme={theme}
         onSelectSource={handleSelectSource}
         onNewChat={handleNewChat}
         onRefresh={() => void workspace.refresh()}
+        onToggleTheme={toggleTheme}
       />
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -77,7 +80,7 @@ export default function App() {
             type="button"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open navigation"
-            className="-ml-1 inline-flex size-9 items-center justify-center rounded-lg text-ink-soft transition hover:bg-black/5 hover:text-ink lg:hidden"
+            className="-ml-1 inline-flex size-9 items-center justify-center rounded-lg text-ink-soft transition hover:bg-black/5 hover:text-ink dark:hover:bg-white/10 lg:hidden"
           >
             <Menu size={18} />
           </button>
@@ -118,6 +121,16 @@ export default function App() {
               </div>
             )}
 
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-[11px] font-medium text-ink-soft transition hover:border-accent-line hover:text-ink"
+            >
+              {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
+              <span className="hidden sm:inline">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+            </button>
             <button
               type="button"
               onClick={() => void chat.clearChat()}

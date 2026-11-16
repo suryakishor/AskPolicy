@@ -8,10 +8,8 @@ interface SourceReferencesProps {
 }
 
 /**
- * Evidence shown beneath an assistant answer.
- *
- * Every entry comes directly from the backend's retrieved chunks. Nothing here
- * is generated in the browser, so citations always map to real indexed text.
+ * Evidence shown beneath an assistant answer, straight from the backend's
+ * retrieved chunks.
  */
 export function SourceReferences({ sources }: SourceReferencesProps) {
   if (sources.length === 0) {
@@ -37,7 +35,7 @@ export function SourceReferences({ sources }: SourceReferencesProps) {
             key={`${source.source}-${source.page_number ?? 'na'}-${source.chunk_index}-${index}`}
             className="group overflow-hidden rounded-lg border border-line bg-surface"
           >
-            <summary className="flex cursor-pointer list-none items-center gap-2.5 px-3 py-2.5 marker:hidden hover:bg-black/[0.02] [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-2.5 px-3 py-2.5 marker:hidden hover:bg-black/[0.02] dark:hover:bg-white/[0.04] [&::-webkit-details-marker]:hidden">
               <FileText size={14} className="shrink-0 text-accent" />
               <span className="min-w-0 flex-1">
                 <span
@@ -59,7 +57,7 @@ export function SourceReferences({ sources }: SourceReferencesProps) {
               />
               <span className="sr-only">Toggle source excerpt</span>
             </summary>
-            <div className="max-h-56 overflow-y-auto border-t border-line/80 bg-[#fbfaf7] px-3.5 py-3">
+            <div className="max-h-56 overflow-y-auto border-t border-line/80 bg-surface-muted px-3.5 py-3">
               <p className="whitespace-pre-wrap text-[11.5px] leading-[1.7] text-ink-soft">
                 {source.content}
               </p>

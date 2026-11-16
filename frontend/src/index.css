@@ -1,9 +1,11 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * AskPolicy design tokens.
- * Warm neutral canvas + a single deep green accent; no gradients, no alternate
- * theme colors, so the interface stays restrained and professional.
+ * Warm neutral canvas + a single deep green accent. Light and dark themes
+ * share the same semantic roles so components stay consistent.
  */
 @theme {
   --font-sans:
@@ -15,6 +17,7 @@
 
   --color-canvas: #faf9f6;
   --color-surface: #ffffff;
+  --color-surface-muted: #fbfaf7;
   --color-line: #e6e2d9;
   --color-ink: #222826;
   --color-ink-soft: #6b746f;
@@ -22,9 +25,29 @@
   --color-accent-soft: #eef4f1;
   --color-accent-line: #cfe0d9;
   --color-danger: #a1483e;
+  --color-on-accent: #f8f7f3;
 }
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  :root.dark {
+    color-scheme: dark;
+    --color-canvas: #111514;
+    --color-surface: #171c1b;
+    --color-surface-muted: #1d2321;
+    --color-line: #2b3431;
+    --color-ink: #e8ecea;
+    --color-ink-soft: #9ca8a2;
+    --color-accent: #3d8b7a;
+    --color-accent-soft: #1c2b27;
+    --color-accent-line: #2f5c52;
+    --color-danger: #d67b6f;
+    --color-on-accent: #f4f7f5;
+  }
+
   html,
   body,
   #root {
@@ -48,15 +71,19 @@
     font: inherit;
   }
 
+  * {
+    border-color: var(--color-line);
+  }
+
   ::selection {
-    background: #d8e7e1;
-    color: #14211d;
+    background: var(--color-accent-line);
+    color: var(--color-ink);
   }
 
   /* Subtle, consistent scrollbars in the sidebar and conversation. */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #d8d3c8 transparent;
+    scrollbar-color: color-mix(in srgb, var(--color-ink-soft) 35%, transparent) transparent;
   }
 
   *::-webkit-scrollbar {
@@ -65,7 +92,7 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: #d8d3c8;
+    background-color: color-mix(in srgb, var(--color-ink-soft) 35%, transparent);
     border: 2px solid transparent;
     border-radius: 9999px;
     background-clip: content-box;
@@ -137,7 +164,7 @@
 
 .markdown strong {
   font-weight: 600;
-  color: #17201d;
+  color: var(--color-ink);
 }
 
 .markdown em {
@@ -158,7 +185,7 @@
 .markdown code {
   border: 1px solid var(--color-line);
   border-radius: 0.3rem;
-  background: #f2efe8;
+  background: var(--color-surface-muted);
   padding: 0.1rem 0.3rem;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.84em;
@@ -170,6 +197,11 @@
   background: #202624;
   padding: 0.85rem 1rem;
   color: #f2f0ea;
+}
+
+:root.dark .markdown pre {
+  background: #0f1312;
+  color: #e8ecea;
 }
 
 .markdown pre code {
@@ -211,7 +243,7 @@
 }
 
 .markdown th {
-  background: #f6f3ec;
+  background: var(--color-surface-muted);
   font-weight: 600;
 }
 

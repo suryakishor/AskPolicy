@@ -10,13 +10,7 @@ from app.schemas.documents import RetrievedChunk
 
 
 class ChatMessage(BaseModel):
-    """A client-supplied historical message.
-
-    The server keeps conversation memory itself (LangGraph + in-memory
-    checkpointer). ``history`` remains in the API for compatibility with
-    clients that do not pass a ``thread_id``; when a new thread is seeded from
-    it, only the last few exchanges are used.
-    """
+    """A client-supplied historical message, used only to seed a new thread."""
 
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=20_000)
@@ -56,12 +50,7 @@ class ChatRequest(BaseModel):
 
 
 class SourceReference(RetrievedChunk):
-    """A source chunk used to answer a question.
-
-    Inherits the retrieval fields so the frontend can display the file name,
-    page number, chunk index, and supporting excerpt. ``score`` is included
-    for transparency but is not presented as a confidence percentage.
-    """
+    """A retrieved chunk cited in an answer."""
 
 
 class ChatResponse(BaseModel):

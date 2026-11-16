@@ -1,14 +1,4 @@
-"""Centralized application configuration.
-
-Every service reads configuration from this module instead of touching
-``os.environ`` directly. Pydantic Settings loads values from environment
-variables and from the project-level ``.env`` file, validates them, and gives
-the rest of the code typed attributes.
-
-Keeping configuration in one place also makes the backend easy to test: tests
-can construct a ``Settings`` instance with different values without mutating
-global process state.
-"""
+"""Application configuration loaded from environment variables and `.env`."""
 
 from __future__ import annotations
 
@@ -18,25 +8,16 @@ from pathlib import Path
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# backend/app/core/config.py -> parents[2] is the backend directory and
-# parents[3] is the repository root. Deriving paths from the file location
-# means the application behaves the same no matter which directory it is
-# started from.
+# Derived from this file's location so the app behaves the same from any cwd.
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 PROJECT_DIR = BACKEND_DIR.parent
 
-# Qdrant collection names may only contain letters, digits, underscores and
-# hyphens. We reuse the configured alias as the prefix of physical collections.
+# Prefix used for temporary physical collections during ingestion.
 TEMP_COLLECTION_INFIX = "__ingest_"
 
 
 class Settings(BaseSettings):
-    """Typed representation of all runtime configuration.
-
-    Environment variable names intentionally match the field names (for
-    example ``GROQ_API_KEY`` -> ``groq_api_key``). Pydantic Settings performs
-    that matching case-insensitively.
-    """
+    """Typed runtime configuration; field names match environment variable names."""
 
     model_config = SettingsConfigDict(
         env_file=(PROJECT_DIR / ".env", BACKEND_DIR / ".env"),
@@ -77,7 +58,7 @@ class Settings(BaseSettings):
     retrieval_top_k: int = Field(default=5, ge=1, le=50)
 
     # --- Conversation memory --------------------------------------------------
-    # The harness caps server-side memory at five question/answer exchanges.
+    # Question/answer exchanges kept per thread.
     conversation_max_exchanges: int = Field(default=5, ge=1, le=20)
 
     # --- Paths ----------------------------------------------------------------
@@ -87,7 +68,7 @@ class Settings(BaseSettings):
     @field_validator("qdrant_collection")
     @classmethod
     def _validate_collection(cls, value: str) -> str:
-        """Reject empty collection names early so failures are easy to trace."""
+        """Reject empty collection names early."""
         cleaned = value.strip()
         if not cleaned:
             raise ValueError("QDRANT_COLLECTION must not be empty")
@@ -95,18 +76,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _validate_chunking(self) -> Settings:
-        """Overlap must be smaller than the chunk size, otherwise splitting loops."""
+        """Overlap must be smaller than chunk size, otherwise splitting loops."""
         if self.chunk_overlap >= self.chunk_size:
             raise ValueError("CHUNK_OVERLAP must be smaller than CHUNK_SIZE")
         return self
 
     @property
     def frontend_origins(self) -> list[str]:
-        """Return allowed browser origins as a list.
-
-        ``FRONTEND_ORIGIN`` accepts a comma-separated list so a developer can
-        allow both ``localhost`` and ``127.0.0.1`` during local development.
-        """
+        """Allowed browser origins parsed from the comma-separated setting."""
         origins = [origin.strip() for origin in self.frontend_origin.split(",")]
         return [origin for origin in origins if origin]
 
@@ -119,12 +96,7 @@ class Settings(BaseSettings):
         return bool(self.groq_api_key.strip() and self.groq_model.strip())
 
     def require_qdrant(self) -> None:
-        """Raise a clear error when Qdrant credentials are missing.
-
-        Validation happens when the relevant service is used rather than at
-        import time, which keeps unit tests and the health endpoint usable
-        without live credentials.
-        """
+        """Raise a clear error when Qdrant credentials are missing."""
         from app.core.errors import ConfigurationError
 
         if not self.qdrant_is_configured:
@@ -133,6 +105,7 @@ class Settings(BaseSettings):
             )
 
     def require_groq(self) -> None:
+        """Raise a clear error when Groq credentials are missing."""
         from app.core.errors import ConfigurationError
 
         if not self.groq_is_configured:

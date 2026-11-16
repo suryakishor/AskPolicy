@@ -39,13 +39,13 @@ export function WelcomeScreen({
       </p>
 
       {(showOffline || showEmpty) && (
-        <div className="mt-5 flex w-full max-w-md items-start gap-2 rounded-xl border border-amber-600/20 bg-amber-50 px-3.5 py-2.5 text-left">
-          <AlertCircle size={14} className="mt-0.5 shrink-0 text-amber-700" />
-          <p className="text-[11px] leading-[1.6] text-amber-900">
+        <div className="mt-5 flex w-full max-w-md items-start gap-2 rounded-xl border border-amber-600/20 bg-amber-50 px-3.5 py-2.5 text-left dark:border-amber-400/20 dark:bg-amber-500/10">
+          <AlertCircle size={14} className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300" />
+          <p className="text-[11px] leading-[1.6] text-amber-900 dark:text-amber-100">
             {showOffline ? (
               <>
                 The backend is not reachable. Start it with{' '}
-                <code className="rounded border border-amber-600/15 bg-amber-100/70 px-1 py-0.5 font-mono text-[10px]">
+                <code className="rounded border border-amber-600/15 bg-amber-100/70 px-1 py-0.5 font-mono text-[10px] dark:border-amber-400/20 dark:bg-amber-500/15">
                   uv run uvicorn app.main:app --reload
                 </code>
                 .
@@ -53,7 +53,7 @@ export function WelcomeScreen({
             ) : (
               <>
                 No documents are indexed yet. Add PDF, DOCX, or TXT files to{' '}
-                <code className="rounded border border-amber-600/15 bg-amber-100/70 px-1 py-0.5 font-mono text-[10px]">
+                <code className="rounded border border-amber-600/15 bg-amber-100/70 px-1 py-0.5 font-mono text-[10px] dark:border-amber-400/20 dark:bg-amber-500/15">
                   documents/
                 </code>{' '}
                 and run the ingestion command.

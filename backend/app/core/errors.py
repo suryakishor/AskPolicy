@@ -1,9 +1,4 @@
-"""Domain exceptions shared by the ingestion process and the API.
-
-The API maps these exceptions to friendly HTTP responses. Internal details
-(timeouts, stack traces, provider payloads) are logged server-side and never
-returned to the browser.
-"""
+"""Domain exceptions with safe, user-facing messages."""
 
 from __future__ import annotations
 

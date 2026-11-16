@@ -1,9 +1,4 @@
-"""RAG pipeline and LangGraph conversation-memory tests.
-
-Both external services are replaced with fakes, so these tests verify prompt
-construction, source mapping, not-found behavior, thread isolation, and the
-five-exchange retention limit without network access.
-"""
+"""RAG pipeline and LangGraph conversation-memory tests with faked services."""
 
 from __future__ import annotations
 

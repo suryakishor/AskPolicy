@@ -4,8 +4,10 @@ import {
   FileSearch,
   FileText,
   Files,
+  Moon,
   Plus,
   RefreshCw,
+  Sun,
   X,
 } from 'lucide-react'
 
@@ -15,6 +17,7 @@ import type {
   HealthResponse,
   IndexedDocument,
 } from '../types'
+import type { Theme } from '../hooks/useTheme'
 import { formatDocumentSubtitle, truncateFileName } from '../utils/formatters'
 import { Logo } from './Logo'
 
@@ -28,9 +31,11 @@ interface SidebarProps {
   activeSource: string | null
   isRefreshing: boolean
   isBusy: boolean
+  theme: Theme
   onSelectSource: (source: string | null) => void
   onNewChat: () => void
   onRefresh: () => void
+  onToggleTheme: () => void
 }
 
 const STATUS_COPY: Record<
@@ -69,9 +74,11 @@ export function Sidebar({
   activeSource,
   isRefreshing,
   isBusy,
+  theme,
   onSelectSource,
   onNewChat,
   onRefresh,
+  onToggleTheme,
 }: SidebarProps) {
   const status = STATUS_COPY[backendState]
   const totalChunks = documents.reduce(
@@ -103,7 +110,7 @@ export function Sidebar({
 
       <aside
         aria-label="Workspace navigation"
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[86vw] flex-col border-r border-line bg-[#f6f4ef] transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-72 lg:max-w-none lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[86vw] flex-col border-r border-line bg-canvas transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-72 lg:max-w-none lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -117,9 +124,18 @@ export function Sidebar({
           </div>
           <button
             type="button"
+            onClick={onToggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            className="ml-auto inline-flex size-8 items-center justify-center rounded-lg text-ink-soft transition hover:bg-black/5 hover:text-ink dark:hover:bg-white/10"
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+          <button
+            type="button"
             onClick={onClose}
             aria-label="Close sidebar"
-            className="ml-auto -mr-1.5 inline-flex size-8 items-center justify-center rounded-lg text-ink-soft transition hover:bg-black/5 hover:text-ink lg:hidden"
+            className="-mr-1.5 inline-flex size-8 items-center justify-center rounded-lg text-ink-soft transition hover:bg-black/5 hover:text-ink dark:hover:bg-white/10 lg:hidden"
           >
             <X size={17} />
           </button>
@@ -153,7 +169,7 @@ export function Sidebar({
               disabled={isRefreshing}
               aria-label="Refresh indexed documents"
               title="Refresh indexed documents"
-              className="inline-flex size-6 items-center justify-center rounded-md text-ink-soft transition hover:bg-black/5 hover:text-ink disabled:opacity-40"
+              className="inline-flex size-6 items-center justify-center rounded-md text-ink-soft transition hover:bg-black/5 hover:text-ink dark:hover:bg-white/10 disabled:opacity-40"
             >
               <RefreshCw
                 size={12.5}
@@ -170,7 +186,7 @@ export function Sidebar({
             className={`mb-1 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition ${
               activeSource === null
                 ? 'bg-accent-soft text-ink'
-                : 'text-ink-soft hover:bg-black/[0.035] hover:text-ink'
+                : 'text-ink-soft hover:bg-black/[0.035] hover:text-ink dark:hover:bg-white/[0.06]'
             }`}
           >
             <Files size={15} className="shrink-0" />
@@ -191,8 +207,8 @@ export function Sidebar({
             <div className="space-y-2 px-1 pt-2" aria-label="Loading documents">
               {[0, 1, 2].map((item) => (
                 <div key={item} className="animate-pulse">
-                  <div className="h-3 w-3/4 rounded bg-stone-200/80" />
-                  <div className="mt-1.5 h-2 w-1/3 rounded bg-stone-200/60" />
+                  <div className="h-3 w-3/4 rounded bg-ink-soft/20" />
+                  <div className="mt-1.5 h-2 w-1/3 rounded bg-ink-soft/15" />
                 </div>
               ))}
             </div>
@@ -238,7 +254,7 @@ export function Sidebar({
                 className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition ${
                   active
                     ? 'bg-accent-soft text-ink'
-                    : 'text-ink-soft hover:bg-black/[0.035] hover:text-ink'
+                    : 'text-ink-soft hover:bg-black/[0.035] hover:text-ink dark:hover:bg-white/[0.06]'
                 }`}
               >
                 <FileText size={15} className="shrink-0" />

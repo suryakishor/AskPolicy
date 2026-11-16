@@ -1,9 +1,6 @@
 /**
- * Workspace metadata: backend health and the documents currently indexed.
- *
- * Documents are read from Qdrant through the API, never uploaded from the
- * browser. Health is polled periodically so the sidebar status stays current;
- * documents can be refreshed manually after running ingestion.
+ * Workspace metadata: backend health (polled) and the documents currently
+ * indexed, read from Qdrant through the API.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -46,8 +43,7 @@ export function useWorkspace() {
       setDocumentState(result.documents.length > 0 ? 'ready' : 'empty')
     } catch (error) {
       setDocuments([])
-      // 503 is the expected "ingestion has not run" response; anything else is
-      // a real connection/API problem worth showing differently.
+      // 503 means ingestion has not run yet; anything else is a real failure.
       if (error instanceof ApiError && error.status === 503) {
         setDocumentState('empty')
       } else {

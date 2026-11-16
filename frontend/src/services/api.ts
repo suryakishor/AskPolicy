@@ -1,8 +1,6 @@
 /**
- * Thin typed wrapper around the AskPolicy FastAPI endpoints.
- *
- * The backend URL is configurable with VITE_API_BASE_URL. Only the API base
- * URL is exposed to the browser; Groq and Qdrant credentials stay server-side.
+ * Thin typed wrapper around the AskPolicy FastAPI endpoints; the base URL comes
+ * from ``VITE_API_BASE_URL``.
  */
 
 import type {

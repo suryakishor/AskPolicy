@@ -16,12 +16,7 @@ router = APIRouter(tags=["documents"])
 def list_documents(
     qdrant: Annotated[QdrantService, Depends(get_qdrant_service)],
 ) -> DocumentListResponse:
-    """Return the real indexed documents and their chunk counts.
-
-    There is no separate metadata database: the payloads in Qdrant are read and
-    aggregated on each request. If ingestion has not run, the route raises a
-    ``CollectionNotReadyError`` which the app maps to HTTP 503.
-    """
+    """Return the real indexed documents and their chunk counts."""
     summary = qdrant.get_index_summary()
     documents = [
         DocumentInfo(

@@ -52,7 +52,7 @@ Ingestion is a separate, terminal-driven process. It indexes the current content
 
 ### Safety behavior
 
-- **Full re-index of current folder:** each successful run represents the current contents of `documents/` (not incremental append). To remove a document from search, remove it from `documents/` and re-run ingestion.
+- **Full re-index of current folder:** each successful run represents the current contents of `documents/`. To remove a document from search, remove it from `documents/` and re-run ingestion.
 - **No destructive pre-delete:** if loading, embedding, upload, validation, or activation fails, the previous alias/index remains active.
 - **No valid documents:** if nothing supported/extractable is found, ingestion does not erase the existing index.
 
@@ -68,7 +68,7 @@ When a user asks a question, the frontend calls `POST /api/chat` (`backend/app/a
 4. **Retrieve relevant chunks** — `RetrievalService` performs dense cosine similarity search in Qdrant via the collection alias (`top_k` configurable, default 5). If a document `source` filter is provided, Qdrant filters by `metadata.source` before applying the top-k limit.
 5. **Handle "no evidence" early** — If retrieval returns no chunks, the backend returns the exact not-found message and **does not call the LLM** (no sources returned).
 6. **Build a grounded prompt** — `app/core/prompts.py` constructs:
-   - a **system prompt** with strict rules (answer only from excerpts, no guessing/invention, cite sources, treat document text as untrusted, refuse when insufficient);
+   - a **system prompt** with strict rules (answer only from excerpts, no guessing/invention, cite sources, treat document text as untrusted, prefer the latest information when excerpts conflict, refuse when insufficient);
    - a **user prompt** containing recent conversation context (labeled as unverified), numbered retrieved excerpts with metadata, and the question.
 7. **Generate the answer** — `LLMService` calls the configured Groq chat model and returns normalized text. If the provider fails or returns empty output, the API returns a safe error.
 8. **Select sources for the response**
@@ -86,19 +86,20 @@ When a user asks a question, the frontend calls `POST /api/chat` (`backend/app/a
 
 ## 3. Conversation memory
 
-- Implemented with **LangGraph** (`MessagesState` + `InMemorySaver`) in `RagService` — a simple single-node flow, not an agent/tool-calling system.
+- Implemented with **LangGraph** (`MessagesState` + `InMemorySaver`) in `RagService` as a single-node flow.
 - Each chat uses a **`thread_id`**; memory is kept per thread.
 - Retains at most the **last 5 question/answer exchanges**.
 - **`POST /api/chat/reset`** clears server-side memory for a thread (used by “New chat” / clear actions).
-- Memory is **in-process and non-persistent**: restarting the backend clears threads (and multi-worker setups would not share memory). The frontend can re-seed a restarted thread from session history.
+- Memory is **in-process**: restarting the backend clears threads. The frontend can re-seed a restarted thread from session history.
 
-**Note:** conversation history helps interpret follow-up questions, but retrieval is performed using the current question text (no query rewriting).
+Conversation history helps interpret follow-up questions; retrieval uses the current question text.
 
 ## 4. Frontend behavior
 
 - **Workspace state** (`useWorkspace`): fetches health and indexed document metadata from the API, polls health periodically, and refreshes documents on demand.
 - **Chat state** (`useChat`): manages messages, loading/error state, `thread_id`, and `sessionStorage` persistence for the current browser session; sends `question`, `history`, `source`, and `thread_id` to `/api/chat`.
 - **UI**: sidebar (documents, counts, status, document filter, refresh/new chat), chat window with Markdown rendering, loading indicator, source references, copy/clear actions, and a responsive layout.
+- **Theme** (`useTheme`): a light/dark theme toggle in the header and sidebar. The choice is applied as a `dark` class on the root element and persisted in `localStorage`, falling back to the operating system preference on first visit.
 - **Data boundary:** the browser only talks to the FastAPI backend; Qdrant and Groq credentials remain server-side.
 
 ## 5. API and error handling
@@ -116,7 +117,7 @@ When a user asks a question, the frontend calls `POST /api/chat` (`backend/app/a
 ## 6. Configuration and local data
 
 - **Environment:** root `.env` (see `.env.example`) provides Groq/Qdrant credentials, model names, chunk/retrieval settings, and app origins.
-- **Local-only artifacts:** `backend/.venv`, `backend/.cache/huggingface`, `frontend/node_modules`, and `documents/` contents are not intended to be committed.
+- **Local-only artifacts:** `backend/.venv`, `backend/.cache/huggingface`, `frontend/node_modules`, and `documents/` contents are excluded from version control.
 - **Model cache:** embedding weights are stored in the project-managed cache (`backend/.cache/huggingface/`) rather than a global user cache.
 
 ## 7. End-to-end summary
@@ -127,4 +128,4 @@ When a user asks a question, the frontend calls `POST /api/chat` (`backend/app/a
 4. User asks a question → backend retrieves relevant chunks (optionally filtered) → Groq generates a grounded answer → UI displays the answer and cited sources.
 5. Re-run ingestion when documents change; the alias swap updates searchable data without a backend restart.
 
-For setup commands, ingestion/reset procedures, and troubleshooting, see `docs/RUNNING_AND_DATA.md`. For deeper design rationale and tradeoffs, see `docs/ARCHITECTURE.md`.
+For setup commands, ingestion/reset procedures, and troubleshooting, see `docs/RUNNING_AND_DATA.md`. For deeper design rationale, see `docs/ARCHITECTURE.md`.

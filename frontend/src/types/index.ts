@@ -67,7 +67,6 @@ export interface QdrantHealth {
 export interface HealthResponse {
   status: 'ok' | 'degraded'
   app_env: string
-  version: string
   embedding_model: string
   llm_model: string
   qdrant: QdrantHealth

@@ -22,12 +22,7 @@ def chat(
     request: ChatRequest,
     rag: Annotated[RagService, Depends(get_rag_service)],
 ) -> ChatResponse:
-    """Answer a question using retrieved policy documents.
-
-    Request validation (non-empty question, length limits) happens in Pydantic.
-    Expected service failures propagate to the application-level exception
-    handlers, which return safe messages and appropriate status codes.
-    """
+    """Answer a question using retrieved policy documents."""
     result = rag.chat(
         question=request.question,
         thread_id=request.thread_id,
@@ -46,11 +41,6 @@ def reset_chat(
     request: ResetRequest,
     rag: Annotated[RagService, Depends(get_rag_service)],
 ) -> ResetResponse:
-    """Clear the in-memory conversation state for a thread.
-
-    The frontend calls this when the user starts a new chat or clears the
-    current one. If the thread does not exist the operation is still a no-op
-    success, which keeps the client logic simple.
-    """
+    """Clear the in-memory conversation state for a thread."""
     cleared = rag.reset(request.thread_id)
     return ResetResponse(cleared=cleared, thread_id=request.thread_id)

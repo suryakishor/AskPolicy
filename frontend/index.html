@@ -10,6 +10,24 @@
     />
     <meta name="theme-color" content="#faf9f6" />
     <title>AskPolicy — Company Policy Assistant</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a flash of the wrong
+      // theme. Falls back to the operating system preference on first visit.
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('askpolicy-theme')
+          var dark =
+            stored === 'dark' ||
+            (!stored &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          if (dark) {
+            document.documentElement.classList.add('dark')
+          }
+        } catch {
+          /* Ignore storage access issues. */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

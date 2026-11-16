@@ -14,7 +14,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app import __version__
 from app.api import api_router
 from app.core.config import settings
 from app.core.errors import (
@@ -35,7 +34,7 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Log configuration state without crashing on missing optional values."""
-    logger.info("Starting AskPolicy API v%s (%s)", __version__, settings.app_env)
+    logger.info("Starting AskPolicy API (%s)", settings.app_env)
     if not settings.qdrant_is_configured:
         logger.warning("Qdrant credentials are missing; document endpoints will be degraded")
     if not settings.groq_is_configured:
@@ -47,12 +46,10 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title="AskPolicy API",
     description="Grounded question answering over company policy documents.",
-    version=__version__,
     lifespan=lifespan,
 )
 
 # Only the React development origins listed in .env may call the API.
-# Credentials are not used in Version 1, so allow_credentials stays False.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.frontend_origins,
@@ -96,11 +93,7 @@ def _status_for(exc: AskPolicyError) -> int:
 
 @app.exception_handler(AskPolicyError)
 async def handle_askpolicy_error(request: Request, exc: AskPolicyError) -> JSONResponse:
-    """Return safe messages for expected failures.
-
-    Internal exception text is logged here but the response only contains a
-    user-actionable message.
-    """
+    """Return a safe message for expected failures; details are logged only."""
     status_code = _status_for(exc)
     logger.warning(
         "Request failed (%s %s): %s",

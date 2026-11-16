@@ -4,21 +4,8 @@ Run from the ``backend`` directory:
 
     uv run python -m ingestion.ingest
 
-Safety model
-------------
-The ingestion process never deletes the currently searchable collection before
-the replacement is ready. It:
-
-1. loads and chunks every supported file under ``documents/``;
-2. embeds all chunks locally;
-3. creates a temporary physical collection;
-4. uploads and validates the new points;
-5. moves the configured alias to the new collection in one Qdrant request;
-6. only then deletes the previous physical collection.
-
-If any step fails, the alias still points at the previous collection and the
-temporary collection is discarded. If no valid documents exist, the process
-exits without touching Qdrant.
+Ingestion builds a temporary collection, validates it, moves the alias in one
+request, and only then removes the old one. On failure the previous index stays active.
 """
 
 from __future__ import annotations
@@ -45,8 +32,7 @@ from ingestion.loaders import discover_documents, load_document
 
 logger = get_logger(__name__)
 
-#: Points uploaded per Qdrant request. Batching keeps request bodies small and
-#: makes progress easier to reason about on large document sets.
+#: Points uploaded per Qdrant request.
 UPLOAD_BATCH_SIZE = 64
 
 
@@ -100,12 +86,7 @@ def _upsert_chunks(
     vectors: list[list[float]],
     batch_size: int = UPLOAD_BATCH_SIZE,
 ) -> None:
-    """Upload chunks and vectors in batches.
-
-    Payload follows LangChain's Qdrant convention (``page_content`` plus
-    ``metadata``) so ``QdrantVectorStore`` can read it without custom mapping.
-    Qdrant accepts UUID strings as point ids.
-    """
+    """Upload chunks and vectors in batches using LangChain's payload shape."""
     if len(chunks) != len(vectors):
         raise IngestionError("Internal error: chunk and vector counts differ.")
 
@@ -145,8 +126,7 @@ def _validate_collection(
             f"Validation failed: expected {expected_count} points, found {actual}."
         )
 
-    # A real similarity query checks the vector configuration and confirms the
-    # points are queryable, not just stored.
+    # A real query confirms the points are searchable, not just stored.
     probe = client.query_points(
         collection_name=collection_name,
         query=sample_vector,
@@ -167,12 +147,7 @@ def switch_alias(
     alias: str,
     new_collection: str,
 ) -> str | None:
-    """Move ``alias`` to ``new_collection``.
-
-    Qdrant applies the operations in order within one request: delete the old
-    alias, then create it against the new collection. This avoids a transient
-    state where the alias points at both collections.
-    """
+    """Move ``alias`` to ``new_collection`` and return its previous target."""
     old_target = _alias_targets(client).get(alias)
 
     operations: list[qdrant_models.AliasOperations] = []
@@ -194,8 +169,7 @@ def switch_alias(
     try:
         client.update_collection_aliases(change_aliases_operations=operations)
     except Exception:
-        # The delete may have been applied even though the create failed. Put
-        # the old alias back so the API keeps serving the previous index.
+        # The delete may have applied even though the create failed; restore it.
         if old_target:
             try:
                 client.update_collection_aliases(
@@ -226,12 +200,7 @@ def cleanup_old_collections(
     active_collection: str,
     previous_collection: str | None,
 ) -> None:
-    """Delete the previous collection and any orphaned ingestion collections.
-
-    Collections referenced by *any* alias are protected. Only the previous
-    target and old temporary collections matching this app's naming pattern are
-    removed.
-    """
+    """Delete the previous collection and any orphaned ingestion collections."""
     protected = {active_collection}
     protected.update(_alias_targets(client).values())
 
@@ -263,11 +232,7 @@ def replace_index(
     vectors: list[list[float]],
     dimension: int,
 ) -> bool:
-    """Build, validate, and activate a new collection safely.
-
-    Returns:
-        ``True`` if a previous collection was replaced, ``False`` on first run.
-    """
+    """Build, validate, and activate a new collection safely."""
     new_collection = _temporary_collection_name(alias)
 
     try:
@@ -313,22 +278,7 @@ def run_ingestion(
     embedding_service: EmbeddingService | None = None,
     collection_alias: str | None = None,
 ) -> IngestionStats:
-    """Execute the full ingestion pipeline.
-
-    Args:
-        documents_root: Defaults to ``documents/`` at the repository root.
-        client: Optional Qdrant client (tests inject a local in-memory client).
-        embedding_service: Optional embedding service (tests inject a fake).
-        collection_alias: Defaults to ``QDRANT_COLLECTION``.
-
-    Returns:
-        Actual statistics gathered during the run.
-
-    Raises:
-        NoDocumentsFoundError: Nothing supported/containing text was found. The
-            existing index is intentionally left untouched.
-        IngestionError: Any failure while building or activating the new index.
-    """
+    """Execute the full ingestion pipeline and return run statistics."""
     root = (documents_root or settings.documents_dir).resolve()
     alias = collection_alias or settings.qdrant_collection
 
