@@ -142,33 +142,10 @@ From `backend/` (uses credentials from `.env`):
 
 ```powershell
 cd D:\AskPolicy\backend
-uv run python -c "
-from app.core.config import settings
-from qdrant_client import QdrantClient
-from qdrant_client.http import models as m
-
-alias = settings.qdrant_collection
-client = QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key, timeout=settings.qdrant_timeout_seconds)
-
-targets = {a.alias_name: a.collection_name for a in client.get_aliases().aliases}
-target = targets.get(alias)
-
-if target:
-    client.update_collection_aliases(change_aliases_operations=[
-        m.DeleteAliasOperation(delete_alias=m.DeleteAlias(alias_name=alias))
-    ])
-    client.delete_collection(collection_name=target)
-    print(f'Deleted alias {alias} and collection {target}')
-else:
-    print(f'Alias {alias} not found; nothing deleted')
-
-# Optional: remove leftover temporary ingestion collections for this alias
-for col in client.get_collections().collections:
-    if col.name.startswith(alias + '__ingest_'):
-        client.delete_collection(collection_name=col.name)
-        print(f'Deleted leftover temp collection {col.name}')
-"
+uv run python -m ingestion.delete_index
 ```
+
+The command deletes the configured alias (`QDRANT_COLLECTION`, default `askpolicy_documents`), the physical collection it points to, and any leftover temporary ingestion collections. It prints a short report of what was removed. If no alias exists yet, it reports that nothing was deleted and exits cleanly.
 
 After clearing:
 - `GET /api/health` will show the collection as not ready / degraded.

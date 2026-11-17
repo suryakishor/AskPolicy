@@ -53,6 +53,7 @@ Ingestion is a separate, terminal-driven process. It indexes the current content
 ### Safety behavior
 
 - **Full re-index of current folder:** each successful run represents the current contents of `documents/`. To remove a document from search, remove it from `documents/` and re-run ingestion.
+- **Full removal:** `uv run python -m ingestion.delete_index` deletes the alias, its collection, and any leftover temporary collections when you intentionally want no indexed data in Qdrant. It does not delete files in `documents/`.
 - **No destructive pre-delete:** if loading, embedding, upload, validation, or activation fails, the previous alias/index remains active.
 - **No valid documents:** if nothing supported/extractable is found, ingestion does not erase the existing index.
 
@@ -68,13 +69,14 @@ When a user asks a question, the frontend calls `POST /api/chat` (`backend/app/a
 4. **Retrieve relevant chunks** — `RetrievalService` performs dense cosine similarity search in Qdrant via the collection alias (`top_k` configurable, default 5). If a document `source` filter is provided, Qdrant filters by `metadata.source` before applying the top-k limit.
 5. **Handle "no evidence" early** — If retrieval returns no chunks, the backend returns the exact not-found message and **does not call the LLM** (no sources returned).
 6. **Build a grounded prompt** — `app/core/prompts.py` constructs:
-   - a **system prompt** with strict rules (answer only from excerpts, no guessing/invention, cite sources, treat document text as untrusted, prefer the latest information when excerpts conflict, refuse when insufficient);
+   - a **system prompt** with strict rules (handle greetings and unrelated messages conversationally, answer policy questions only from excerpts, no guessing/invention, cite sources, treat document text as untrusted, prefer the latest information when excerpts conflict, refuse when insufficient);
    - a **user prompt** containing recent conversation context (labeled as unverified), numbered retrieved excerpts with metadata, and the question.
 7. **Generate the answer** — `LLMService` calls the configured Groq chat model and returns normalized text. If the provider fails or returns empty output, the API returns a safe error.
 8. **Select sources for the response**
    - If the model returns the required not-found message, sources are cleared.
    - If the answer includes citation markers (e.g. `[1]`, `[2]`), only the cited retrieved chunks are returned.
-   - If no valid citation markers are present, all retrieved chunks are returned as a fallback so evidence remains inspectable.
+   - Non-standard markers (e.g. `【3†L5-L6】`) are normalized to bracketed numbers (`[3]`) and any unmappable marker is stripped, so only `[n]` citations are shown.
+   - If no valid citation markers are present, no sources are returned (this covers greetings and other non-policy replies).
 9. **Update conversation memory and return** — The exchange is stored in thread memory (trimmed to the last 5 question/answer exchanges). The API returns `{ answer, sources, thread_id }`.
 
 ### Retrieval and grounding details
@@ -83,6 +85,7 @@ When a user asks a question, the frontend calls `POST /api/chat` (`backend/app/a
 - **Metadata filtering:** users can scope questions to a specific document from the UI.
 - **Source transparency:** returned sources come from actual retrieved chunks (file, path, page when available, chunk index, excerpt/score).
 - **Refusal behavior:** unsupported questions produce: `I couldn't find this information in the available company documents.`
+- **Greetings and small talk:** messages unrelated to policy receive a short conversational reply with no sources.
 
 ## 3. Conversation memory
 

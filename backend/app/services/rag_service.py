@@ -41,6 +41,11 @@ logger = get_logger(__name__)
 #: Matches the bracketed excerpt numbers requested by the system prompt.
 CITATION_PATTERN = re.compile(r"\[(\d+)\]")
 
+#: Non-standard citation artifacts some models emit, e.g. "【3†L5-L6】".
+CITATION_ARTIFACT_PATTERN = re.compile(r"【\s*(\d+)[^】]*】")
+#: Any remaining non-standard marker that cannot be mapped to a citation.
+CITATION_LEFTOVER_PATTERN = re.compile(r"【[^】]*】")
+
 
 @dataclass
 class ChatResult:
@@ -99,7 +104,7 @@ class RagService:
             sources: list[SourceReference] = []
         else:
             user_prompt = build_user_prompt(question, chunks, history)
-            answer = self.llm.generate_answer(SYSTEM_PROMPT, user_prompt)
+            answer = self._normalize_citations(self.llm.generate_answer(SYSTEM_PROMPT, user_prompt))
             if answer.strip() == NOT_FOUND_MESSAGE:
                 # Unsupported claims should not be accompanied by unrelated
                 # citations that could look like evidence.
@@ -143,6 +148,16 @@ class RagService:
         return pairs
 
     @staticmethod
+    def _normalize_citations(answer: str) -> str:
+        """Rewrite non-standard citation markers to the bracketed [n] format.
+
+        Models sometimes emit artifacts such as "【3†L5-L6】"; keep the excerpt
+        number and drop the rest, then remove any markers that cannot be mapped.
+        """
+        answer = CITATION_ARTIFACT_PATTERN.sub(lambda match: f"[{match.group(1)}]", answer)
+        return CITATION_LEFTOVER_PATTERN.sub("", answer)
+
+    @staticmethod
     def _to_source(chunk: RetrievedChunk) -> SourceReference:
         """Map a retrieval result to the public source schema."""
         return SourceReference(**chunk.model_dump())
@@ -155,8 +170,8 @@ class RagService:
     ) -> list[SourceReference]:
         """Return only the excerpts the answer actually cited.
 
-        If the model cites nothing, all retrieved chunks are returned so the
-        user still has evidence to inspect.
+        A greeting or other non-policy answer contains no citations, so it
+        returns no sources.
         """
         cited: list[int] = []
         for match in CITATION_PATTERN.finditer(answer):
@@ -165,8 +180,8 @@ class RagService:
                 cited.append(index)
 
         if not cited:
-            logger.debug("Answer contained no valid citations; returning all retrieved sources")
-            return [cls._to_source(chunk) for chunk in chunks]
+            logger.debug("Answer contained no valid citations; returning no sources")
+            return []
 
         return [cls._to_source(chunks[index]) for index in sorted(cited)]
 

@@ -74,6 +74,7 @@ ingestion CLI never calls Groq.
 | `ingestion/chunker.py` | Recursive character splitting with overlap |
 | `ingestion/metadata.py` | Stable, real metadata derived from file paths |
 | `ingestion/ingest.py` | CLI, upload batching, validation, alias swap, cleanup |
+| `ingestion/delete_index.py` | CLI that deletes the alias, its collection, and leftover temp collections |
 
 The API routes only translate HTTP to service calls. This keeps the RAG
 pipeline testable without FastAPI and keeps the routes easy to read.
@@ -250,7 +251,9 @@ Prompts live in `app/core/prompts.py`.
 
 `SYSTEM_PROMPT` establishes that the model:
 
-- may answer only from the provided excerpts;
+- responds briefly and naturally to greetings, thanks, small talk, and other
+  messages unrelated to company policy, without using the excerpts or citing;
+- may answer policy questions only from the provided excerpts;
 - must not invent policies, dates, amounts, or procedures;
 - must return the exact not-found sentence when evidence is insufficient;
 - must prefer the latest information when the excerpts provide two differing
@@ -277,11 +280,14 @@ without calling Groq at all. If the model itself returns the not-found message,
 the API drops the retrieved sources so unrelated citations are not displayed
 next to a refusal.
 
-For a normal answer, the service parses bracketed citation markers (`[1]`,
+For a policy answer, the service parses bracketed citation markers (`[1]`,
 `[2]`, …) and returns only the retrieved chunks that the answer cited. This
-prevents irrelevant top-k context from appearing as supporting evidence. If the
-model produces no valid citations, all retrieved chunks are returned as a safe
-fallback so the answer remains inspectable.
+prevents irrelevant top-k context from appearing as supporting evidence. Answers
+with no citations (such as greetings and small talk) return no sources.
+
+If the model emits a non-standard marker such as `【3†L5-L6】`, the service
+rewrites it to the equivalent bracketed number (`[3]`) and strips any marker it
+cannot map, so only `[n]` citations ever reach the user.
 
 ## 8. Conversation memory
 

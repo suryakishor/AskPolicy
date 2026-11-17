@@ -38,8 +38,9 @@ employee can verify the answer.
   the sidebar.
 - **Professional UI** — responsive two-pane layout, Markdown answers, loading
   and error states, copy and clear actions, and a session-scoped transcript.
-- **Tested core** — 49 backend tests cover loaders, chunking, retrieval,
-  ingestion replacement safety, API contracts, and conversation memory.
+- **Tested core** — 56 backend tests cover loaders, chunking, retrieval,
+  ingestion replacement safety, index deletion, API contracts, and conversation
+  memory.
 
 ## Technology stack
 
@@ -123,8 +124,10 @@ existing index remains searchable.
 6. Otherwise the prompt combines recent conversation context with numbered,
    clearly delimited document excerpts. History is labelled as unverified
    context, not policy evidence.
-7. Groq generates an answer that cites excerpt numbers such as `[1]`.
-8. The response contains the answer, the retrieved sources cited by the answer,
+7. Groq generates a grounded answer. Policy answers cite excerpt numbers such as
+   `[1]`; greetings and other non-policy messages get a short conversational
+   reply instead.
+8. The response contains the answer, the sources cited by the answer (if any),
    and the thread id. The new exchange is appended to memory, and older
    exchanges are trimmed so at most five remain.
 
@@ -150,7 +153,7 @@ AskPolicy/
 │   │   ├── core/              # config, errors, logging, prompts, model cache
 │   │   ├── schemas/           # Pydantic request/response models
 │   │   └── services/          # embedding, Qdrant, retrieval, LLM, RAG
-│   ├── ingestion/             # loaders, chunker, metadata, CLI
+│   ├── ingestion/             # loaders, chunker, metadata, ingest + delete CLIs
 │   └── tests/                 # pytest suite
 └── frontend/
     ├── package.json
@@ -239,6 +242,21 @@ backend does not need to restart; the next query resolves the updated alias.
 Only `.pdf`, `.txt`, and `.docx` are supported. Hidden files, unsupported
 extensions, and files with no extractable text are skipped.
 
+### Removing indexed data
+
+Re-indexing replaces the whole index, so to remove documents from search, delete
+them from `documents/` and run ingestion again. To remove **all** indexed data
+from Qdrant (for example to reset the environment), run:
+
+```powershell
+cd backend
+uv run python -m ingestion.delete_index
+```
+
+This deletes the configured alias, its collection, and any leftover temporary
+ingestion collections. It is destructive and does not touch files in
+`documents/`; re-run ingestion to build the index again.
+
 ## Running the application
 
 Use two terminals after ingestion.
@@ -309,16 +327,18 @@ start a new conversation.
 The `score` is a cosine similarity value included for transparency; the UI does
 not present it as a confidence percentage.
 
-If the index has no relevant chunks, or the model determines the excerpts are
-insufficient, the answer is:
+If the index has no relevant chunks, or a policy question cannot be answered
+from the excerpts, the answer is:
 
 ```text
 I couldn't find this information in the available company documents.
 ```
 
 and no sources are returned. When an answer cites specific excerpts, only those
-cited sources are returned; if the model omits citation markers, all retrieved
-chunks are returned as a fallback.
+cited sources are returned; any non-standard citation marker the model emits is
+normalized to `[n]` so only bracketed citations are shown. Greetings, small talk,
+and other messages unrelated to company policy receive a short conversational
+reply and no sources.
 
 ### Error behavior
 

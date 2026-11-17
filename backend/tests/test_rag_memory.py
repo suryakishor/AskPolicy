@@ -127,14 +127,61 @@ def test_only_cited_retrieved_chunks_are_returned_as_sources() -> None:
     assert result.sources[0].content == travel_chunk.content
 
 
-def test_answer_without_citations_falls_back_to_all_retrieved_sources() -> None:
+def test_answer_without_citations_returns_no_sources() -> None:
     retrieval = FakeRetrieval([leave_chunk()])
     llm = FakeLLM(answer="Employees receive 20 days of annual leave.")
     rag = RagService(retrieval, llm)
 
     result = rag.chat("What is the leave policy?", thread_id=THREAD)
 
-    assert [source.file_name for source in result.sources] == ["leave_policy.pdf"]
+    assert result.sources == []
+
+
+def test_non_standard_citation_markers_are_normalized() -> None:
+    travel_chunk = RetrievedChunk(
+        file_name="travel_policy.txt",
+        source="hr/travel_policy.txt",
+        file_type="txt",
+        page_number=None,
+        chunk_index=0,
+        content="Hotel reimbursement is capped at 180 USD per night.",
+        score=0.72,
+    )
+    retrieval = FakeRetrieval([leave_chunk(), travel_chunk])
+    llm = FakeLLM(answer="The hotel cap is 180 USD per night【2†L5-L6】.")
+    rag = RagService(retrieval, llm)
+
+    result = rag.chat("What is the hotel reimbursement cap?", thread_id=THREAD)
+
+    # The artifact is rewritten to a standard marker and still resolves a source.
+    assert "【" not in result.answer
+    assert "[2]" in result.answer
+    assert [source.file_name for source in result.sources] == ["travel_policy.txt"]
+
+
+def test_unrecognized_citation_markers_are_stripped() -> None:
+    retrieval = FakeRetrieval([leave_chunk()])
+    llm = FakeLLM(answer="Employees receive 20 days of annual leave【notes】.")
+    rag = RagService(retrieval, llm)
+
+    result = rag.chat("What is the leave policy?", thread_id=THREAD)
+
+    assert "【" not in result.answer
+    assert result.sources == []
+
+
+def test_greeting_gets_conversational_answer_without_sources() -> None:
+    retrieval = FakeRetrieval([leave_chunk()])
+    llm = FakeLLM(answer="Hello! Ask me anything about our company policies.")
+    rag = RagService(retrieval, llm)
+
+    result = rag.chat("hello", thread_id=THREAD)
+
+    assert result.answer.startswith("Hello!")
+    assert result.sources == []
+    # The system prompt instructs the model how to handle greetings and small talk.
+    system_prompt, _ = llm.calls[0]
+    assert "greeting" in system_prompt.lower()
 
 
 def test_thread_memory_keeps_only_last_five_exchanges() -> None:
